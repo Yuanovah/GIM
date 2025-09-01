@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced IT Word Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d4ff, #007acc, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3)); }
+            to { filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.6)); }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #00d4ff;
+            opacity: 0.8;
+        }
+
+        .game-area {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .game-board {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 2px;
+            background: rgba(0, 50, 100, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(145deg, #1e3a8a, #1e40af);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .cell:hover {
+            background: linear-gradient(145deg, #2563eb, #3b82f6);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+        }
+
+        .cell.selected {
+            background: linear-gradient(145deg, #059669, #10b981);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+            animation: pulse 0.5s ease-out;
+        }
+
+        .cell.found {
+            background: linear-gradient(145deg, #dc2626, #ef4444);
+            color: #fff;
+            animation: found 0.6s ease-out;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .cell.hint {
+            background: linear-gradient(145deg, #fbbf24, #f59e0b);
+            animation: hintPulse 1s ease-in-out infinite;
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.8);
+        }
+
+        @keyframes hintPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-panel, .words-panel, .controls-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #00d4ff;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(0, 100, 200, 0.1);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #10b981;
+        }
+
+        .word-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .word-item {
+            padding: 8px 12px;
+            background: linear-gradient(145deg, #374151, #4b5563);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .word-item.found {
+            background: linear-gradient(145deg, #059669, #10b981);
+            text-decoration: line-through;
+            animation: wordFound 0.5s ease-out;
+        }
+
+        @keyframes wordFound {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .control-btn {
+            padding: 12px 20px;
+            background: linear-gradient(145deg, #1e40af, #2563eb);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(145deg, #2563eb, #3b82f6);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn.danger {
+            background: linear-gradient(145deg, #dc2626, #ef4444);
+        }
+
+        .control-btn.danger:hover {
+            background: linear-gradient(145deg, #ef4444, #f87171);
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(145deg, #7c2d12, #ea580c);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 0 20px rgba(234, 88, 12, 0.3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #059669, #10b981);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .difficulty-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .difficulty-btn.active {
+            background: linear-gradient(145deg, #1e40af, #2563eb);
+            border-color: #00d4ff;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .particle {
+            position: absolute;
+            background: #00d4ff;
+            border-radius: 50%;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+            50% { transform: translateY(-50px) rotate(180deg); opacity: 1; }
+        }
+
+        /* Welcome Screen Styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .welcome-container {
+            max-width: 600px;
+            padding: 30px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .welcome-header {
+            margin-bottom: 25px;
+        }
+
+        .welcome-title {
+            font-size: 2.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d4ff, #007acc, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+            animation: titlePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .welcome-subtitle {
+            font-size: 1.1rem;
+            color: #00d4ff;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .game-preview {
+            margin: 20px 0;
+        }
+
+        .preview-grid {
+            display: inline-grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            background: rgba(0, 50, 100, 0.3);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .preview-cell {
+            width: 25px;
+            height: 25px;
+            background: linear-gradient(145deg, #1e3a8a, #1e40af);
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            animation: previewFloat 2s ease-in-out infinite;
+        }
+
+        .preview-cell:nth-child(odd) {
+            animation-delay: 0.2s;
+        }
+
+        .preview-cell:nth-child(even) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes previewFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .welcome-features {
+            margin: 25px 0;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            text-align: left;
+            background: rgba(0, 100, 200, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(0, 100, 200, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 1.8rem;
+            margin-right: 15px;
+            min-width: 45px;
+        }
+
+        .feature-text h3 {
+            color: #00d4ff;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .feature-text p {
+            color: #ccc;
+            margin: 0;
+            font-size: 0.85rem;
+        }
+
+        .difficulty-preview {
+            margin: 25px 0;
+        }
+
+        .difficulty-preview h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .difficulty-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .difficulty-option {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .difficulty-option.active {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+            transform: scale(1.03);
+            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .difficulty-option:hover {
+            transform: translateY(-2px);
+            border-color: #00d4ff;
+        }
+
+        .difficulty-option h4 {
+            color: #fff;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .difficulty-option p {
+            color: #ccc;
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        .start-game-btn {
+            background: linear-gradient(145deg, #059669, #10b981);
+            border: none;
+            border-radius: 30px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            animation: buttonGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes buttonGlow {
+            from { box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); }
+            to { box-shadow: 0 10px 25px rgba(16, 185, 129, 0.6); }
+        }
+
+        .start-game-btn:hover {
+            background: linear-gradient(145deg, #10b981, #34d399);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.6);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 25px;
+            padding: 10px 20px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .game-screen .header {
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            .welcome-title {
+                font-size: 2rem;
+            }
+            
+            .welcome-container {
+                margin: 15px;
+                padding: 20px 15px;
+            }
+            
+            .difficulty-options {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .preview-cell {
+                width: 22px;
+                height: 22px;
+                font-size: 11px;
+            }
+            
+            .start-game-btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+            }
+            
+            .feature-item {
+                padding: 12px;
+            }
+            
+            .feature-icon {
+                font-size: 1.5rem;
+                margin-right: 10px;
+                min-width: 35px;
+            }
+            
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .cell {
+                width: 25px;
+                height: 25px;
+                font-size: 12px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(12, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    <div class="particles" id="particles"></div>
+    
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-container">
+            <div class="welcome-header">
+                <h1 class="welcome-title">🖥️ IT WORD SEARCH ELITE</h1>
+                <p class="welcome-subtitle">Advanced Technology Word Hunt</p>
+            </div>
+            
+            <div class="welcome-content">
+                <div class="game-preview">
+                    <div class="preview-grid">
+                        <div class="preview-cell">H</div>
+                        <div class="preview-cell">T</div>
+                        <div class="preview-cell">M</div>
+                        <div class="preview-cell">L</div>
+                        <div class="preview-cell">C</div>
+                        <div class="preview-cell">S</div>
+                        <div class="preview-cell">S</div>
+                        <div class="preview-cell">P</div>
+                    </div>
+                </div>
+                
+                <div class="welcome-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">🎯</span>
+                        <div class="feature-text">
+                            <h3>Cari Kata IT</h3>
+                            <p>Temukan kata-kata teknologi tersembunyi dalam grid</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <span class="feature-icon">⏱️</span>
+                        <div class="feature-text">
+                            <h3>Challenge Mode</h3>
+                            <p>Lawan waktu dalam mode 5 menit penuh tantangan</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <span class="feature-icon">🏆</span>
+                        <div class="feature-text">
+                            <h3>Skor & Achievement</h3>
+                            <p>Raih skor tertinggi dan buktikan kemampuan IT mu</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="difficulty-preview">
+                    <h3>Pilih Level Kesulitan:</h3>
+                    <div class="difficulty-options">
+                        <div class="difficulty-option active" data-difficulty="easy">
+                            <h4>🟢 MUDAH</h4>
+                            <p>Kata pendek: HTML, CSS, PHP, SQL</p>
+                        </div>
+                        <div class="difficulty-option" data-difficulty="hard">
+                            <h4>🔴 SULIT</h4>
+                            <p>Kata panjang: JAVASCRIPT, ALGORITHM</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="start-game-btn" onclick="startGame()">
+                    🚀 SIAP MAIN!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div class="game-screen" id="gameScreen" style="display: none;">
+        <div class="container">
+            <div class="header">
+                <h1 class="title">🖥️ IT WORD SEARCH ELITE</h1>
+                <p class="subtitle">Advanced Technology Word Hunt</p>
+                <button class="back-btn" onclick="backToWelcome()">← Kembali</button>
+            </div>
+            
+            <div class="game-area">
+                <div class="game-board">
+                    <div class="grid" id="gameGrid"></div>
+                </div>
+                
+                <div class="sidebar">
+                    <div class="stats-panel">
+                        <h3 class="panel-title">📊 Game Stats</h3>
+                        <div class="timer" id="timer">05:00</div>
+                        <div class="stat-item">
+                            <span>Kata Ditemukan:</span>
+                            <span class="stat-value" id="foundWords">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Total Kata:</span>
+                            <span class="stat-value" id="totalWords">12</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>Skor:</span>
+                            <span class="stat-value" id="score">0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="words-panel">
+                        <h3 class="panel-title">🎯 Kata yang Dicari</h3>
+                        <div class="word-list" id="wordList"></div>
+                    </div>
+                    
+                    <div class="controls-panel">
+                        <h3 class="panel-title">🎮 Kontrol</h3>
+                        <div class="difficulty-selector">
+                            <div class="difficulty-btn active" data-difficulty="easy">Mudah</div>
+                            <div class="difficulty-btn" data-difficulty="hard">Sulit</div>
+                        </div>
+                        <button class="control-btn" onclick="newGame()">🆕 Game Baru</button>
+                        <button class="control-btn" onclick="toggleHint()">💡 Hint</button>
+                        <button class="control-btn" onclick="pauseGame()">⏸️ Pause</button>
+                        <button class="control-btn danger" onclick="resetGame()">🔄 Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AdvancedWordSearch {
+            constructor() {
+                this.gridSize = 15;
+                this.grid = [];
+                this.wordsToFind = [];
+                this.foundWords = new Set();
+                this.selectedCells = [];
+                this.isSelecting = false;
+                this.score = 0;
+                this.timeLeft = 300; // 5 minutes
+                this.timer = null;
+                this.difficulty = 'easy';
+                this.isPaused = false;
+                
+                this.wordLists = {
+                    easy: ['HTML', 'CSS', 'PHP', 'SQL', 'XML', 'API', 'URL', 'FTP', 'HTTP', 'JSON', 'AJAX', 'MYSQL'],
+                    hard: ['JAVASCRIPT', 'ALGORITHM', 'DATABASE', 'FRAMEWORK', 'BOOTSTRAP', 'RESPONSIVE', 'ENCRYPTION', 'PROTOCOL', 'BACKEND', 'FRONTEND', 'DEBUGGING', 'OPTIMIZATION']
+                };
+                
+                this.initializeGame();
+                this.createStars();
+                this.setupEventListeners();
+                this.startTimer();
+            }
+            
+            initializeGame() {
+                this.wordsToFind = [...this.wordLists[this.difficulty]];
+                this.wordPositions = []; // Reset word positions
+                this.createGrid();
+                this.placeWords();
+                this.fillEmptyCells();
+                this.renderGrid();
+                this.renderWordList();
+                this.updateStats();
+            }
+            
+            createGrid() {
+                this.grid = Array(this.gridSize).fill().map(() => Array(this.gridSize).fill(''));
+            }
+            
+            placeWords() {
+                const directions = [
+                    [0, 1],   // horizontal
+                    [1, 0],   // vertical
+                    [1, 1],   // diagonal down-right
+                    [1, -1],  // diagonal down-left
+                    [0, -1],  // horizontal reverse
+                    [-1, 0],  // vertical reverse
+                    [-1, -1], // diagonal up-left
+                    [-1, 1]   // diagonal up-right
+                ];
+                
+                this.wordsToFind.forEach(word => {
+                    let placed = false;
+                    let attempts = 0;
+                    
+                    while (!placed && attempts < 100) {
+                        const direction = directions[Math.floor(Math.random() * directions.length)];
+                        const startRow = Math.floor(Math.random() * this.gridSize);
+                        const startCol = Math.floor(Math.random() * this.gridSize);
+                        
+                        if (this.canPlaceWord(word, startRow, startCol, direction)) {
+                            this.placeWord(word, startRow, startCol, direction);
+                            placed = true;
+                        }
+                        attempts++;
+                    }
+                });
+            }
+            
+            canPlaceWord(word, row, col, direction) {
+                for (let i = 0; i < word.length; i++) {
+                    const newRow = row + direction[0] * i;
+                    const newCol = col + direction[1] * i;
+                    
+                    if (newRow < 0 || newRow >= this.gridSize || newCol < 0 || newCol >= this.gridSize) {
+                        return false;
+                    }
+                    
+                    if (this.grid[newRow][newCol] && this.grid[newRow][newCol] !== word[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            
+            placeWord(word, row, col, direction) {
+                const wordData = {
+                    word: word,
+                    positions: []
+                };
+                
+                for (let i = 0; i < word.length; i++) {
+                    const newRow = row + direction[0] * i;
+                    const newCol = col + direction[1] * i;
+                    this.grid[newRow][newCol] = word[i];
+                    wordData.positions.push({ row: newRow, col: newCol });
+                }
+                
+                // Store word positions for hints
+                if (!this.wordPositions) {
+                    this.wordPositions = [];
+                }
+                this.wordPositions.push(wordData);
+            }
+            
+            fillEmptyCells() {
+                const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                for (let i = 0; i < this.gridSize; i++) {
+                    for (let j = 0; j < this.gridSize; j++) {
+                        if (!this.grid[i][j]) {
+                            this.grid[i][j] = letters[Math.floor(Math.random() * letters.length)];
+                        }
+                    }
+                }
+            }
+            
+            renderGrid() {
+                const gridElement = document.getElementById('gameGrid');
+                gridElement.innerHTML = '';
+                
+                // Adjust grid columns for mobile
+                if (window.innerWidth <= 768) {
+                    gridElement.style.gridTemplateColumns = `repeat(12, 1fr)`;
+                    this.gridSize = 12;
+                }
+                
+                for (let i = 0; i < this.gridSize; i++) {
+                    for (let j = 0; j < this.gridSize; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.textContent = this.grid[i][j];
+                        cell.dataset.row = i;
+                        cell.dataset.col = j;
+                        gridElement.appendChild(cell);
+                    }
+                }
+            }
+            
+            renderWordList() {
+                const wordList = document.getElementById('wordList');
+                wordList.innerHTML = '';
+                
+                this.wordsToFind.forEach(word => {
+                    const wordElement = document.createElement('div');
+                    wordElement.className = 'word-item';
+                    wordElement.textContent = word;
+                    wordElement.dataset.word = word;
+                    wordList.appendChild(wordElement);
+                });
+            }
+            
+            setupEventListeners() {
+                const grid = document.getElementById('gameGrid');
+                
+                // Mouse events
+                grid.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('cell') && !this.isPaused) {
+                        e.preventDefault();
+                        this.startSelection(e.target);
+                    }
+                });
+                
+                grid.addEventListener('mousemove', (e) => {
+                    if (this.isSelecting && e.target.classList.contains('cell')) {
+                        this.continueSelection(e.target);
+                    }
+                });
+                
+                grid.addEventListener('mouseup', (e) => {
+                    if (this.isSelecting) {
+                        this.endSelection();
+                    }
+                });
+                
+                // Prevent context menu on right click
+                grid.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+                
+                // Global mouse up to catch when mouse leaves grid
+                document.addEventListener('mouseup', () => {
+                    if (this.isSelecting) {
+                        this.endSelection();
+                    }
+                });
+                
+                // Touch events for mobile
+                grid.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (e.target.classList.contains('cell') && !this.isPaused) {
+                        this.startSelection(e.target);
+                    }
+                }, { passive: false });
+                
+                grid.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (this.isSelecting) {
+                        const touch = e.touches[0];
+                        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if (element && element.classList.contains('cell')) {
+                            this.continueSelection(element);
+                        }
+                    }
+                }, { passive: false });
+                
+                grid.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    if (this.isSelecting) {
+                        this.endSelection();
+                    }
+                }, { passive: false });
+                
+                // Difficulty selector
+                document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.difficulty = e.target.dataset.difficulty;
+                        this.newGame();
+                    });
+                });
+            }
+            
+            startSelection(cell) {
+                this.isSelecting = true;
+                this.selectedCells = [];
+                this.startCell = {
+                    row: parseInt(cell.dataset.row),
+                    col: parseInt(cell.dataset.col),
+                    element: cell
+                };
+                this.selectCell(cell);
+            }
+            
+            continueSelection(cell) {
+                if (!this.isSelecting || !this.startCell) return;
+                
+                const currentRow = parseInt(cell.dataset.row);
+                const currentCol = parseInt(cell.dataset.col);
+                
+                // Clear previous selection
+                this.clearSelection();
+                
+                // Calculate direction from start to current
+                const rowDiff = currentRow - this.startCell.row;
+                const colDiff = currentCol - this.startCell.col;
+                
+                // Determine if it's a valid straight line (horizontal, vertical, or diagonal)
+                let isValidLine = false;
+                let stepRow = 0;
+                let stepCol = 0;
+                
+                if (rowDiff === 0) {
+                    // Horizontal line
+                    isValidLine = true;
+                    stepCol = colDiff > 0 ? 1 : -1;
+                } else if (colDiff === 0) {
+                    // Vertical line
+                    isValidLine = true;
+                    stepRow = rowDiff > 0 ? 1 : -1;
+                } else if (Math.abs(rowDiff) === Math.abs(colDiff)) {
+                    // Diagonal line
+                    isValidLine = true;
+                    stepRow = rowDiff > 0 ? 1 : -1;
+                    stepCol = colDiff > 0 ? 1 : -1;
+                }
+                
+                if (isValidLine) {
+                    // Select all cells in the line from start to current
+                    const steps = Math.max(Math.abs(rowDiff), Math.abs(colDiff));
+                    
+                    for (let i = 0; i <= steps; i++) {
+                        const row = this.startCell.row + (stepRow * i);
+                        const col = this.startCell.col + (stepCol * i);
+                        
+                        if (row >= 0 && row < this.gridSize && col >= 0 && col < this.gridSize) {
+                            const cellElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                            if (cellElement) {
+                                this.selectedCells.push({
+                                    row: row,
+                                    col: col,
+                                    element: cellElement
+                                });
+                                cellElement.classList.add('selected');
+                            }
+                        }
+                    }
+                } else {
+                    // If not a valid line, just select the start cell
+                    this.selectCell(this.startCell.element);
+                }
+            }
+            
+            endSelection() {
+                if (this.isSelecting) {
+                    this.checkSelectedWord();
+                    this.clearSelection();
+                    this.isSelecting = false;
+                    this.startCell = null;
+                }
+            }
+            
+            selectCell(cell) {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                
+                // Only add if not already selected
+                if (!this.selectedCells.some(c => c.row === row && c.col === col)) {
+                    this.selectedCells.push({ row, col, element: cell });
+                    cell.classList.add('selected');
+                }
+            }
+            
+            clearSelection() {
+                this.selectedCells.forEach(cell => {
+                    cell.element.classList.remove('selected');
+                });
+                this.selectedCells = [];
+            }
+            
+            checkSelectedWord() {
+                if (this.selectedCells.length < 2) return;
+                
+                const word = this.selectedCells.map(cell => 
+                    this.grid[cell.row][cell.col]
+                ).join('');
+                
+                const reverseWord = word.split('').reverse().join('');
+                
+                if (this.wordsToFind.includes(word) || this.wordsToFind.includes(reverseWord)) {
+                    const foundWord = this.wordsToFind.includes(word) ? word : reverseWord;
+                    
+                    if (!this.foundWords.has(foundWord)) {
+                        this.foundWords.add(foundWord);
+                        this.selectedCells.forEach(cell => {
+                            cell.element.classList.add('found');
+                        });
+                        
+                        // Mark word as found in list
+                        const wordElement = document.querySelector(`[data-word="${foundWord}"]`);
+                        if (wordElement) {
+                            wordElement.classList.add('found');
+                        }
+                        
+                        this.score += foundWord.length * 10;
+                        this.updateStats();
+                        this.createParticles();
+                        
+                        if (this.foundWords.size === this.wordsToFind.length) {
+                            this.gameWon();
+                        }
+                    }
+                }
+            }
+            
+            updateStats() {
+                document.getElementById('foundWords').textContent = this.foundWords.size;
+                document.getElementById('totalWords').textContent = this.wordsToFind.length;
+                document.getElementById('score').textContent = this.score;
+                
+                const progress = (this.foundWords.size / this.wordsToFind.length) * 100;
+                document.getElementById('progressFill').style.width = `${progress}%`;
+            }
+            
+            startTimer() {
+                this.timer = setInterval(() => {
+                    if (!this.isPaused) {
+                        this.timeLeft--;
+                        this.updateTimer();
+                        
+                        if (this.timeLeft <= 0) {
+                            this.gameOver();
+                        }
+                    }
+                }, 1000);
+            }
+            
+            updateTimer() {
+                const minutes = Math.floor(this.timeLeft / 60);
+                const seconds = this.timeLeft % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            createStars() {
+                const starsContainer = document.getElementById('stars');
+                for (let i = 0; i < 100; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = `${Math.random() * 100}%`;
+                    star.style.top = `${Math.random() * 100}%`;
+                    star.style.width = `${Math.random() * 3 + 1}px`;
+                    star.style.height = star.style.width;
+                    star.style.animationDelay = `${Math.random() * 3}s`;
+                    starsContainer.appendChild(star);
+                }
+            }
+            
+            createParticles() {
+                const particlesContainer = document.getElementById('particles');
+                for (let i = 0; i < 15; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = `${Math.random() * 100}%`;
+                    particle.style.top = `${Math.random() * 100}%`;
+                    particle.style.width = `${Math.random() * 8 + 4}px`;
+                    particle.style.height = particle.style.width;
+                    particle.style.animationDelay = `${Math.random() * 2}s`;
+                    particlesContainer.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        particle.remove();
+                    }, 4000);
+                }
+            }
+            
+            newGame() {
+                this.resetGame();
+                this.initializeGame();
+            }
+            
+            resetGame() {
+                clearInterval(this.timer);
+                this.foundWords.clear();
+                this.score = 0;
+                this.timeLeft = 300;
+                this.isPaused = false;
+                this.startTimer();
+            }
+            
+            gameWon() {
+                clearInterval(this.timer);
+                setTimeout(() => {
+                    alert(`🎉 Selamat! Anda menang!\nSkor: ${this.score}\nWaktu tersisa: ${this.timeLeft}s`);
+                }, 500);
+            }
+            
+            gameOver() {
+                clearInterval(this.timer);
+                alert(`⏰ Waktu habis!\nSkor akhir: ${this.score}\nKata ditemukan: ${this.foundWords.size}/${this.wordsToFind.length}`);
+            }
+        }
+        
+        // Global functions for buttons
+        let game;
+        let selectedDifficulty = 'easy';
+        
+        // Welcome screen functions
+        function startGame() {
+            // Hide welcome screen and show game screen
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            
+            // Initialize game with selected difficulty
+            if (game) {
+                game.difficulty = selectedDifficulty;
+                game.newGame();
+            } else {
+                // Create new game instance
+                game = new AdvancedWordSearch();
+                game.difficulty = selectedDifficulty;
+            }
+        }
+        
+        function backToWelcome() {
+            // Stop current game
+            if (game && game.timer) {
+                clearInterval(game.timer);
+            }
+            
+            // Show welcome screen and hide game screen
+            document.getElementById('welcomeScreen').style.display = 'flex';
+            document.getElementById('gameScreen').style.display = 'none';
+        }
+        
+        // Game functions
+        function newGame() {
+            game.newGame();
+        }
+        
+        function toggleHint() {
+            // Clear previous hints
+            document.querySelectorAll('.cell.hint').forEach(cell => {
+                cell.classList.remove('hint');
+            });
+            
+            // Find first unfound word
+            const unfoundWord = game.wordsToFind.find(word => !game.foundWords.has(word));
+            
+            if (unfoundWord && game.wordPositions) {
+                // Find the word's position data
+                const wordData = game.wordPositions.find(wp => wp.word === unfoundWord);
+                
+                if (wordData && wordData.positions.length > 0) {
+                    // Highlight first 2-3 letters of the word
+                    const lettersToHighlight = Math.min(3, wordData.positions.length);
+                    
+                    for (let i = 0; i < lettersToHighlight; i++) {
+                        const pos = wordData.positions[i];
+                        const cellElement = document.querySelector(`[data-row="${pos.row}"][data-col="${pos.col}"]`);
+                        if (cellElement) {
+                            cellElement.classList.add('hint');
+                        }
+                    }
+                    
+                    // Show hint message
+                    alert(`💡 Hint: Cari kata "${unfoundWord}" - ${lettersToHighlight} huruf pertama ditandai dengan warna kuning!`);
+                    
+                    // Remove hint after 5 seconds
+                    setTimeout(() => {
+                        document.querySelectorAll('.cell.hint').forEach(cell => {
+                            cell.classList.remove('hint');
+                        });
+                    }, 5000);
+                } else {
+                    alert(`💡 Hint: Cari kata "${unfoundWord}"`);
+                }
+            } else {
+                alert('🎉 Semua kata sudah ditemukan!');
+            }
+        }
+        
+        function pauseGame() {
+            game.isPaused = !game.isPaused;
+            const btn = event.target;
+            btn.textContent = game.isPaused ? '▶️ Resume' : '⏸️ Pause';
+        }
+        
+        function resetGame() {
+            game.resetGame();
+            game.initializeGame();
+        }
+        
+        // Initialize welcome screen
+        window.addEventListener('load', () => {
+            // Setup difficulty selector on welcome screen
+            document.querySelectorAll('.difficulty-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.difficulty-option').forEach(opt => {
+                        opt.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    selectedDifficulty = this.dataset.difficulty;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
